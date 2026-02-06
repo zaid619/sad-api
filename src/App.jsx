@@ -51,32 +51,46 @@ export default function App() {
   ];
 
 const spinWheel = () => {
-    if (isSpinning) return;
-    setIsSpinning(true);
-    
-    const extraDegrees = Math.floor(Math.random() * 360) + 1800;
-    setRotation(rotation + extraDegrees);
+  if (isSpinning) return;
+  setIsSpinning(true);
+  
+  // 1. Calculate the landing spot FIRST
+  const randomDegree = Math.floor(Math.random() * 360);
+  const totalRotation = rotation + 1800 + randomDegree; // 5 full spins + extra
+  setRotation(totalRotation);
 
-    setTimeout(async () => {
-      setIsSpinning(false);
-      const wonPrize = benefits[Math.floor(Math.random() * benefits.length)];
-      setPrize(wonPrize);
+  // 2. Calculate which slice that degree corresponds to
+  // (360 / benefits.length) gives the size of each slice
+  const sliceSize = 360 / benefits.length;
+  const prizeIndex = Math.floor((360 - (randomDegree % 360)) / sliceSize);
+  const wonPrize = benefits[prizeIndex];
 
-      try {
-        await fetch('/api/save-prize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            prize: wonPrize, 
-            spunAt: new Date().toISOString(), 
-            user: "Alizeh" 
-          }),
-        });
-      } catch (err) {
-        console.error("Database error:", err);
+  setTimeout(async () => {
+    setIsSpinning(false);
+    setPrize(wonPrize); // Now the prize matches the wheel visual!
+
+    try {
+      const response = await fetch('/api/save-prize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prize: wonPrize, 
+          spunAt: new Date().toISOString(), 
+          user: "Alizeh" 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server Error:", errorData.error);
+      } else {
+        console.log("Prize saved to MongoDB successfully!");
       }
-    }, 3000);
-  };
+    } catch (err) {
+      console.error("Network/Connection error:", err);
+    }
+  }, 5000); // 4 seconds gives the animation time to fully settle
+};
 
   const finalize = () => {
     confetti({ 
