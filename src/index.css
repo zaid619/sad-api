@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@400;700&display=swap');
+@import "tailwindcss";
+
+/* If you want to add custom colors or fonts in v4, you do it here like this: */
+@theme {
+  --font-dancing: "Dancing Script", cursive;
+  --font-quicksand: "Quicksand", sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: #FFF5F5;
+  overflow-x: hidden;
+}
