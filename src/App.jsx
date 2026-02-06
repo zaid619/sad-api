@@ -47,30 +47,41 @@ export default function App() {
     "Handwritten apology letter ✍️", 
     "I'll admit you're right for 24h 🏆", 
     "Shopping at Mr. DIY 🛠️",
-    "Everyday zero arguments 🕊️"
   ];
 
 const spinWheel = () => {
   if (isSpinning) return;
   setIsSpinning(true);
   
-  // 1. Calculate the landing spot FIRST
-  const randomDegree = Math.floor(Math.random() * 360);
-  const totalRotation = rotation + 1800 + randomDegree; // 5 full spins + extra
+  // 1. Generate a completely fresh random degree (0-359)
+  const newRandomDegree = Math.floor(Math.random() * 360);
+  
+  // 2. Calculate the NEW rotation. 
+  // We take the current rotation, find the next "full" circle, 
+  // and add 1800 (5 spins) + our new random degree.
+  const currentFullCircles = Math.ceil(rotation / 360);
+  const totalRotation = (currentFullCircles * 360) + 1800 + newRandomDegree;
+  
   setRotation(totalRotation);
 
-  // 2. Calculate which slice that degree corresponds to
-  // (360 / benefits.length) gives the size of each slice
+  // 3. Math for the Prize
   const sliceSize = 360 / benefits.length;
-  const prizeIndex = Math.floor((360 - (randomDegree % 360)) / sliceSize);
+  
+  // Use ONLY the newRandomDegree for the prize calculation. 
+  // This removes the "drift" caused by the total rotation.
+  // We use (360 - newRandomDegree) because CSS is clockwise.
+  const rotationOffset = 0; // Adjust this (90, 180, 270) if the pointer is not at the right
+  const actualLandingAngle = (360 - newRandomDegree + rotationOffset) % 360;
+  
+  const prizeIndex = Math.floor(actualLandingAngle / sliceSize);
   const wonPrize = benefits[prizeIndex];
 
   setTimeout(async () => {
     setIsSpinning(false);
-    setPrize(wonPrize); // Now the prize matches the wheel visual!
+    setPrize(wonPrize);
 
     try {
-      const response = await fetch('/api/save-prize', {
+      await fetch('/api/save-prize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -79,17 +90,11 @@ const spinWheel = () => {
           user: "Alizeh" 
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Server Error:", errorData.error);
-      } else {
-        console.log("Prize saved to MongoDB successfully!");
-      }
+      console.log("Prize saved!");
     } catch (err) {
-      console.error("Network/Connection error:", err);
+      console.error("Error:", err);
     }
-  }, 5000); // 4 seconds gives the animation time to fully settle
+  }, 5000); 
 };
 
   const finalize = () => {
